@@ -265,6 +265,9 @@ describe("node hl7 client - sanity tests", () => {
       "MSH|^~\\&|device||Host||20240101000000+0000||OUL^R22^OUL_R22|2|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-01^IHE\r";
     const hl7_timezone: string =
       "MSH|^~\\\\&|device||Host||19981004010159+0100||OUL^R22^OUL_R22|2|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-01^IHE\\r";
+    // EVN segment contains "MSH|fake" in fields 3-4 — raw text has "MSH|" mid-line
+    const hl7_msh_mid_line: string =
+      "MSH|^~\\&|||||20081231||ADT^A01^ADT_A01|12345||2.7\rEVN||20081231|MSH|fake";
 
     test("... timezone offset", async () => {
       const message = new Message({ text: hl7_timezone });
@@ -363,6 +366,15 @@ describe("node hl7 client - sanity tests", () => {
         });
         expect(count).toBe(1);
       });
+    });
+
+    test("...MSH mid-line inside another segment is not treated as a segment start", async () => {
+      // hl7_msh_mid_line has "MSH|" appearing inside the EVN segment (EVN.3=MSH, EVN.4=fake)
+      // The old regex matched "MSH|" anywhere and would falsely detect a second MSH segment.
+      // The new ^-multiline regex only matches at start of line, so no false split occurs.
+      const message = new Message({ text: hl7_msh_mid_line });
+      expect(message.get("EVN.3").toString()).toBe("MSH");
+      expect(message.get("EVN.4").toString()).toBe("fake");
     });
   });
 });

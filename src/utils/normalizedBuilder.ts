@@ -179,7 +179,7 @@ export function normalizedClientFileBuilderOptions(
   }
 
   const regex = /\n/gm;
-  const subst = "\\r";
+  const subst = "\r";
   if (
     typeof props.fullFilePath !== "undefined" &&
     typeof props.fileBuffer === "undefined"
